@@ -282,24 +282,27 @@ export class OfficialTidalClient implements TidalClient {
   }
 
   /**
-   * Add tracks to the user's favorites ("collection") **one at a time**, in order. Favorites have no
-   * manual ordering — TIDAL sorts the collection by date added — so adding sequentially gives each
-   * track a distinct, increasing timestamp that mirrors the Spotify order (visible when the user
-   * sorts their collection by "Date added"). Batching would collide timestamps and scramble order.
+   * Add tracks to the user's favorites ("collection"). `onChunk` reports progress.
+   *
+   * Favorites have no manual ordering — TIDAL sorts the collection by date added — so by default we
+   * add one track per request (`chunkSize` 1): each gets a distinct, increasing timestamp that
+   * mirrors the Spotify order (visible when sorting the collection by "Date added"). Passing a larger
+   * `chunkSize` is faster but collides timestamps within a batch, so the order is not preserved.
    */
-  async addFavoriteTracks(trackIds: string[], onChunk?: (added: number) => void): Promise<void> {
-    for (let i = 0; i < trackIds.length; i++) {
-      const id = trackIds[i]!;
+  async addFavoriteTracks(trackIds: string[], onChunk?: (added: number) => void, chunkSize = 1): Promise<void> {
+    const size = Math.max(1, chunkSize);
+    for (let i = 0; i < trackIds.length; i += size) {
+      const chunk = trackIds.slice(i, i + size);
       const { error } = await this.withRetry(
         () =>
           this.api.POST('/userCollections/{id}/relationships/tracks', {
             params: { path: { id: this.userId }, query: { countryCode: this.countryCode } },
-            body: { data: [{ id, type: 'tracks' as const }] },
+            body: { data: chunk.map((id) => ({ id, type: 'tracks' as const })) },
           }),
-        `favorite track ${id}`,
+        `favorite ${chunk.length} track(s)`,
       );
       if (error) throw new Error('Failed to add tracks to favorites');
-      onChunk?.(i + 1);
+      onChunk?.(Math.min(i + chunk.length, trackIds.length));
     }
   }
 

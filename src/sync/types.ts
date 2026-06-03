@@ -44,6 +44,11 @@ export interface SourceMatchResult {
 export interface SyncPlan {
   mapping: SyncMapping;
   tracks: Record<string, string>;
+  /**
+   * Favorites only: add tracks one-by-one so TIDAL's "date added" order mirrors Spotify.
+   * Defaults to true; set false to add in fast batches (order not guaranteed). Ignored for playlists.
+   */
+  preserveOrder?: boolean;
 }
 
 /** The outcome of writing one plan to TIDAL. */

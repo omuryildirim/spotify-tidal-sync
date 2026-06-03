@@ -139,6 +139,8 @@ export const clearMatchCache = () =>
 export interface SyncPlan {
   mapping: SyncMapping;
   tracks: Record<string, string>;
+  /** Favorites only: add one-by-one to preserve order (default true). False = faster, unordered. */
+  preserveOrder?: boolean;
 }
 
 export interface SyncRunResult {

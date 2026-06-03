@@ -233,7 +233,9 @@ export async function runSync(
         const toAdd = unique.filter((id) => !existing.has(id));
         const alreadyPresent = unique.length - toAdd.length;
         tick(0, alreadyPresent);
-        await tidal.addFavoriteTracks(toAdd, (added) => tick(added, alreadyPresent));
+        // Preserve order by default (one request per track); batch only if the user opted out.
+        const chunkSize = plan.preserveOrder === false ? 20 : 1;
+        await tidal.addFavoriteTracks(toAdd, (added) => tick(added, alreadyPresent), chunkSize);
         result = {
           sourceId: plan.mapping.sourceId,
           sourceName: plan.mapping.sourceName,

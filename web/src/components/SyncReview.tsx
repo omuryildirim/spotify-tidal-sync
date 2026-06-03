@@ -25,6 +25,8 @@ export default function SyncReview({
   const [resolutions, setResolutions] = useState<Resolutions>({});
   // Per-source choice: drop duplicate TIDAL tracks? Default false = sync as-is (mirror Spotify).
   const [dropDupes, setDropDupes] = useState<Record<number, boolean>>({});
+  // Favorites only: preserve order (one-by-one add)? Default true.
+  const [keepFavOrder, setKeepFavOrder] = useState<Record<number, boolean>>({});
 
   const totals = results.reduce(
     (acc, r) => ({ matched: acc.matched + r.matched.length, total: acc.total + r.total }),
@@ -53,7 +55,9 @@ export default function SyncReview({
         const choice = resolutions[resolveKey(i, u.spotify.id)];
         if (choice && choice !== 'skip') place(u.spotify.id, choice);
       }
-      return { mapping: r.mapping, tracks };
+      const plan: SyncPlan = { mapping: r.mapping, tracks };
+      if (r.mapping.destination.kind === 'favorites') plan.preserveOrder = keepFavOrder[i] ?? true;
+      return plan;
     });
 
   const willSync = buildPlans().reduce((n, p) => n + Object.keys(p.tracks).length, 0);
@@ -95,6 +99,8 @@ export default function SyncReview({
             onPick={pick}
             dropDupes={dropDupes[i] ?? false}
             onDropDupes={(v) => setDropDupes((d) => ({ ...d, [i]: v }))}
+            keepFavOrder={keepFavOrder[i] ?? true}
+            onKeepFavOrder={(v) => setKeepFavOrder((d) => ({ ...d, [i]: v }))}
           />
         ))}
       </div>
@@ -131,6 +137,8 @@ function SourceCard({
   onPick,
   dropDupes,
   onDropDupes,
+  keepFavOrder,
+  onKeepFavOrder,
 }: {
   result: SourceMatchResult;
   sourceIdx: number;
@@ -138,6 +146,8 @@ function SourceCard({
   onPick: (key: string, value: string) => void;
   dropDupes: boolean;
   onDropDupes: (value: boolean) => void;
+  keepFavOrder: boolean;
+  onKeepFavOrder: (value: boolean) => void;
 }) {
   const [showMatched, setShowMatched] = useState(false);
   const [showDupes, setShowDupes] = useState(false);
@@ -146,6 +156,7 @@ function SourceCard({
   const extraCount = duplicates.reduce((n, g) => n + (g.count - 1), 0);
   // For existing playlists / favorites the engine always merges duplicates, so the choice is moot.
   const isNew = result.mapping.destination.kind === 'new';
+  const isFavorites = result.mapping.destination.kind === 'favorites';
 
   return (
     <section className="rounded-xl border border-white/10 bg-white/5">
@@ -158,6 +169,25 @@ function SourceCard({
           <span className="text-green-400">{result.matched.length}</span> / {result.total}
         </span>
       </header>
+
+      {isFavorites && (
+        <label className="flex cursor-pointer items-start gap-2.5 border-b border-white/10 px-4 py-3 text-sm">
+          <input
+            type="checkbox"
+            checked={keepFavOrder}
+            onChange={(e) => onKeepFavOrder(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-sky-500"
+          />
+          <span>
+            <span className="text-zinc-200">Preserve Spotify order in Favorites</span>
+            <span className="block text-xs text-zinc-500">
+              TIDAL Favorites have no fixed order — they're listed by date added. To match Spotify, each
+              track is added one at a time, which is reliable but slower. Uncheck to add them in fast
+              batches (order not guaranteed).
+            </span>
+          </span>
+        </label>
+      )}
 
       {extraCount > 0 && (
         <div className="border-b border-white/10 bg-amber-500/[0.04] px-4 py-3">

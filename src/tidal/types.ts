@@ -45,8 +45,11 @@ export interface TidalClient {
   /** Append tracks (in order) to a playlist. `onChunk` reports tracks written so far. */
   addTracks(playlistId: string, trackIds: string[], onChunk?: (added: number) => void): Promise<void>;
 
-  /** Add tracks to the user's favorites ("collection"). `onChunk` reports tracks written so far. */
-  addFavoriteTracks(trackIds: string[], onChunk?: (added: number) => void): Promise<void>;
+  /**
+   * Add tracks to the user's favorites ("collection"). `onChunk` reports tracks written so far.
+   * `chunkSize` defaults to 1 (one request per track) to preserve order; a larger size is faster.
+   */
+  addFavoriteTracks(trackIds: string[], onChunk?: (added: number) => void, chunkSize?: number): Promise<void>;
 
   /** Remove every track from a playlist. */
   clearPlaylist(playlistId: string): Promise<void>;
