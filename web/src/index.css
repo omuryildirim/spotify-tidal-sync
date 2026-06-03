@@ -1,0 +1,25 @@
+@import 'tailwindcss';
+
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  margin: 0;
+}
+
+/* Tailwind v4's Preflight drops the default pointer cursor on buttons — restore it
+   for everything interactive (but not when disabled). */
+@layer base {
+  button:not(:disabled),
+  [role='button'],
+  a[href],
+  label[for],
+  select:not(:disabled),
+  input[type='checkbox']:not(:disabled),
+  input[type='radio']:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
+}

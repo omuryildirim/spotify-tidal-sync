@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+web/dist/
+*.tsbuildinfo
+
+# Local state (credentials, tokens, match cache, sync history) — lives in ~/.spotify_to_tidal
+# but ignore any stray local copies too
+.spotify_to_tidal/
+
+# Env
+.env
+.env.local
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.log
