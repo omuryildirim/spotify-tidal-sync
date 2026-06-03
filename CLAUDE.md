@@ -33,5 +33,5 @@ Run `pnpm typecheck` and `pnpm test` before committing.
 - Strict TypeScript, ESM. Backend uses NodeNext resolution (`.js` import specifiers); frontend uses the bundler resolver.
 - Prefer the existing layering: the server depends on `sync`/`spotify`/`tidal`; those never import from `server` or `web`.
 - Keep TIDAL/Spotify network access inside their client modules; the sync engine talks to the `TidalClient` interface, not the raw API.
-- Local state (tokens, credentials, history) lives in `~/.spotify_to_tidal/` — never commit secrets.
+- Local state (tokens, credentials, history) lives in `~/.spotify-tidal-sync/` — never commit secrets.
 - Add or update a Vitest test when changing matching or sync-engine behavior.

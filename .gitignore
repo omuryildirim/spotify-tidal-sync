@@ -6,9 +6,9 @@ dist/
 web/dist/
 *.tsbuildinfo
 
-# Local state (credentials, tokens, match cache, sync history) — lives in ~/.spotify_to_tidal
+# Local state (credentials, tokens, sync history) — lives in ~/.spotify-tidal-sync
 # but ignore any stray local copies too
-.spotify_to_tidal/
+.spotify-tidal-sync/
 
 # Env
 .env

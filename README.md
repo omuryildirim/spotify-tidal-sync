@@ -38,7 +38,7 @@ To run the production build instead: `pnpm build && pnpm start` (serves everythi
 
 ## Where your data lives
 
-Everything stays on your machine, under `~/.spotify_to_tidal/`:
+Everything stays on your machine, under `~/.spotify-tidal-sync/`:
 
 - `app-credentials.json`, `spotify-token.json`, `tidal-credentials.json` — your API keys and OAuth tokens (written with `0600` permissions)
 - `sync-history.json` — the last sync for each source

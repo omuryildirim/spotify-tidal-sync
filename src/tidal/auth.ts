@@ -16,7 +16,7 @@ export const TIDAL_SCOPES = [
   'playlists.write',
 ];
 
-const CREDENTIALS_STORAGE_KEY = 'spotify_to_tidal';
+const CREDENTIALS_STORAGE_KEY = 'spotify-tidal-sync';
 
 let initialized = false;
 

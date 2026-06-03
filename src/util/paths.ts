@@ -3,10 +3,10 @@ import { join } from 'node:path';
 import { mkdirSync } from 'node:fs';
 
 /**
- * Directory where we persist credentials, the match cache and resume checkpoints.
+ * Directory where we persist credentials, tokens and sync history.
  * Lives under the user's home so it is stable regardless of the working directory.
  */
-export const STATE_DIR = join(homedir(), '.spotify_to_tidal');
+export const STATE_DIR = join(homedir(), '.spotify-tidal-sync');
 
 export function ensureStateDir(): string {
   mkdirSync(STATE_DIR, { recursive: true });
