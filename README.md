@@ -4,9 +4,21 @@ Move your Spotify playlists and Liked Songs to TIDAL through a small local web a
 
 ## Screenshots
 
-<!-- Add screenshots here -->
+Connect both accounts with your own API credentials:
 
-_Coming soon._
+![Connect screen](docs/images/login.png)
+
+Browse your Spotify playlists and Liked Songs alongside your TIDAL library, and pick what to sync:
+
+![Library browser](docs/images/playlists.png)
+
+Review the matches before anything is written — resolve unmatched tracks, handle duplicates, and choose options like preserving order in Favorites:
+
+![Review screen](docs/images/preview.png)
+
+Then sync, keeping your exact Spotify order:
+
+![Sync progress](docs/images/sync.png)
 
 ## Getting started
 
