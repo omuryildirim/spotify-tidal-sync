@@ -1,79 +1,59 @@
 # spotify-tidal-sync
 
-Import and sync your **Spotify** playlists and Liked Songs into **TIDAL** — through a small local web app. Match quality first: ISRC-exact matching, a fuzzy fallback, and a review screen where you resolve anything that didn't match before a single track is written. Playlist order is preserved exactly.
+Move your Spotify playlists and Liked Songs to TIDAL through a small local web app. It matches each track to TIDAL (ISRC first, with a smart fallback), lets you review and fix anything before writing, and keeps your playlist order intact.
 
-![stack](https://img.shields.io/badge/stack-TypeScript%20·%20React%20·%20Hono-blue)
+## Screenshots
 
-## Features
+<!-- Add screenshots here -->
 
-- **Side-by-side connect screen** — paste your Spotify and TIDAL app credentials; tokens are stored locally, no config file to hand-edit.
-- **Browse both libraries** — your Spotify playlists + Liked Songs on one side, your TIDAL playlists + Favorites on the other. Drill into any of them to see the tracks.
-- **Dry run before writing** — match every selected track to TIDAL and review the result. Nothing is written until you confirm.
-  - **ISRC-first matching** (batched), with a cleaned-query text-search fallback scored on title + artist + duration.
-  - **Resolve unmatched tracks** by picking from suggested alternatives or pasting a TIDAL track link.
-  - **Duplicate handling** — duplicates in a Spotify playlist are surfaced; choose to mirror them or collapse them.
-- **Order-preserving sync** — new playlists mirror the Spotify order exactly.
-- **Flexible destinations** — create a new TIDAL playlist, append into an existing one (non-destructive), or add Liked Songs to your TIDAL Favorites.
-- **Resilient to rate limits** — gentle request rate with automatic retry/backoff on TIDAL throttling, plus a match cache so re-runs are fast.
-- **Live progress + sync history** — a progress bar during matching and writing, and a "last synced" badge per source.
+_Coming soon._
 
-## Requirements
+## Getting started
 
-- **Node.js ≥ 22** and **[pnpm](https://pnpm.io/)**
-- A **Spotify** app — create one at <https://developer.spotify.com/dashboard>
-- A **TIDAL** app — create one at <https://developer.tidal.com>
+**Requirements:** [Node.js](https://nodejs.org) ≥ 22, [pnpm](https://pnpm.io), and your own developer apps for [Spotify](https://developer.spotify.com/dashboard) and [TIDAL](https://developer.tidal.com).
 
-When creating the apps, register these **Redirect URIs**:
+When creating those apps, register these redirect URIs:
 
-| Service | Redirect URI |
-| --- | --- |
-| Spotify | `http://127.0.0.1:8888/api/auth/spotify/callback` |
-| TIDAL   | `http://127.0.0.1:8888/api/auth/tidal/callback` |
+- **Spotify** — `http://127.0.0.1:8888/api/auth/spotify/callback`
+- **TIDAL** — `http://127.0.0.1:8888/api/auth/tidal/callback`
 
-You'll need each app's **Client ID** and **Client Secret**.
-
-## Quick start
+Then run:
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-`pnpm dev` starts the API (port `8888`) and the Vite dev server, and opens the app at <http://localhost:5173>.
+This opens the app at <http://localhost:5173>. Paste each service's **Client ID** and **Client Secret** to connect, pick what to sync and where, review the matches, and confirm.
 
-1. On the connect screen, paste your Spotify and TIDAL **Client ID / Secret** and connect each (you'll be redirected to authorize).
-2. Pick the playlists (and/or Liked Songs) to sync and choose a destination for each.
-3. Hit **Sync** to run a dry run, review the matches, resolve anything unmatched, and confirm.
+To run the production build instead: `pnpm build && pnpm start` (serves everything on <http://127.0.0.1:8888>).
 
-## Running the built app
+## Features
 
-```bash
-pnpm build   # type-checks, bundles the server, builds the web UI
-pnpm start   # serves the app + API on http://127.0.0.1:8888
-```
+- **ISRC-first matching** with a fuzzy title/artist/duration fallback.
+- **Review before writing** — resolve unmatched tracks by picking a suggestion or pasting a TIDAL link; nothing is written until you confirm.
+- **Order preserved** — new playlists mirror the Spotify order exactly.
+- **Flexible destinations** — a new TIDAL playlist, an existing one (append-only), or your TIDAL Favorites.
+- **Duplicate handling**, **live progress**, a **match cache** for fast re-runs, and a **"last synced" badge** per playlist.
+
+## Where your data lives
+
+Everything stays on your machine, under `~/.spotify_to_tidal/`:
+
+- `app-credentials.json`, `spotify-token.json`, `tidal-credentials.json` — your API keys and OAuth tokens (written with `0600` permissions)
+- `sync-history.json` — the last sync for each source
+
+Data is only ever sent to Spotify and TIDAL directly, and none of it is committed to the repo.
 
 ## Scripts
 
 | Command | Description |
 | --- | --- |
-| `pnpm dev` | Run API + web with hot reload |
-| `pnpm build` | Type-check, compile the server, build the frontend |
+| `pnpm dev` | Run the app with hot reload |
+| `pnpm build` | Type-check and build for production |
 | `pnpm start` | Run the production build |
-| `pnpm typecheck` | Type-check backend and frontend |
-| `pnpm test` | Run the unit tests (Vitest) |
-
-## How it works
-
-- **Backend** — a [Hono](https://hono.dev) server (`src/server`) exposing the REST + streaming API and serving the built frontend in production.
-- **Spotify** (`src/spotify`) — OAuth (Authorization Code) and a thin Web API client.
-- **TIDAL** (`src/tidal`) — OAuth (Authorization Code + PKCE) via the official `@tidal-music` SDK, and a JSON:API client with retry/backoff.
-- **Sync engine** (`src/sync`) — the matcher, the dry-run pass, and the order-preserving write pass.
-- **Web UI** (`web`) — a React + Tailwind single-page app.
-
-Credentials, tokens and sync history live under `~/.spotify_to_tidal/` (credentials files are written with `0600` permissions). Nothing sensitive is committed to the repo.
+| `pnpm test` | Run the unit tests |
 
 ## License
 
-[PolyForm Noncommercial License 1.0.0](LICENSE) — free to use, modify and share for any
-**noncommercial** purpose (personal, hobby, research, education, nonprofits). Commercial use is
-not permitted. See [LICENSE](LICENSE) for the full terms.
+[PolyForm Noncommercial License 1.0.0](LICENSE) — free for any **noncommercial** use (personal, hobby, research, education, nonprofits). Commercial use is not permitted.
