@@ -74,4 +74,6 @@ Credentials, tokens and sync history live under `~/.spotify_to_tidal/` (credenti
 
 ## License
 
-MIT
+[PolyForm Noncommercial License 1.0.0](LICENSE) — free to use, modify and share for any
+**noncommercial** purpose (personal, hobby, research, education, nonprofits). Commercial use is
+not permitted. See [LICENSE](LICENSE) for the full terms.
