@@ -27,6 +27,22 @@ export function remove(key: string): void {
   localStorage.removeItem(PREFIX + key);
 }
 
+/**
+ * Wipe everything this app persists: all `sts:`-namespaced keys (credentials, tokens, match cache,
+ * sync history, flags) plus the TIDAL auth SDK's own keys (stored under `spotify-tidal-sync*`).
+ * Returns the number of keys removed.
+ */
+export function clearAllData(): number {
+  const TIDAL_PREFIX = 'spotify-tidal-sync';
+  const toRemove: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && (key.startsWith(PREFIX) || key.startsWith(TIDAL_PREFIX))) toRemove.push(key);
+  }
+  for (const key of toRemove) localStorage.removeItem(key);
+  return toRemove.length;
+}
+
 /** Public OAuth client ids the user entered (no secrets — this is a browser-only PKCE app). */
 export interface ServiceCredentials {
   clientId: string;
