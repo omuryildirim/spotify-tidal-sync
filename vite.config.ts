@@ -5,12 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   root: 'web',
   plugins: [react(), tailwindcss()],
-  server: {
-    port: 5173,
-    open: true,
-    proxy: {
-      '/api': 'http://127.0.0.1:8888',
-    },
-  },
+  // Spotify requires 127.0.0.1 (not localhost) for loopback redirect URIs.
+  server: { host: '127.0.0.1', port: 5173, open: true },
   build: { outDir: 'dist', emptyOutDir: true },
 });

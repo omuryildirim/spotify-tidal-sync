@@ -1,5 +1,5 @@
-import type { SpotifyTrack } from '../spotify/types.js';
-import type { TidalTrack } from '../tidal/types.js';
+import type { SpotifyTrack } from '../spotify/types';
+import type { TidalTrack } from '../tidal/types';
 
 /** Where a Spotify source should land on TIDAL. */
 export type Destination =

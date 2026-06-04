@@ -2,13 +2,8 @@
 node_modules/
 
 # Build output
-dist/
 web/dist/
 *.tsbuildinfo
-
-# Local state (credentials, tokens, sync history) — lives in ~/.spotify-tidal-sync
-# but ignore any stray local copies too
-.spotify-tidal-sync/
 
 # Env
 .env

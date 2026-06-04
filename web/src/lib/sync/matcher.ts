@@ -1,5 +1,5 @@
-import type { SpotifyTrack } from '../spotify/types.js';
-import type { TidalTrack } from '../tidal/types.js';
+import type { SpotifyTrack } from '../spotify/types';
+import type { TidalTrack } from '../tidal/types';
 
 /** Strip diacritics and non-ASCII (mirrors the Python NFD + ascii-ignore normalization). */
 export function normalize(s: string): string {

@@ -1,5 +1,5 @@
-import { createTidalApiClient } from './auth.js';
-import { type TidalClient, type TidalTrack, type TidalPlaylist, parseIsoDuration } from './types.js';
+import { createTidalApiClient } from './auth';
+import { type TidalClient, type TidalTrack, type TidalPlaylist, parseIsoDuration } from './types';
 
 type Api = ReturnType<typeof createTidalApiClient>;
 

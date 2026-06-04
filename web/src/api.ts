@@ -1,98 +1,92 @@
+// Browser-only data layer. Everything runs client-side; there is no backend.
+import { session } from './lib/session';
+import { redirectUri, type Service } from './lib/config';
+import { buildSpotifyAuthUrl, completeSpotifyLogin, logoutSpotify } from './lib/spotify/auth';
+import { getTidalLoginUrl, finalizeTidalLogin } from './lib/tidal/auth';
+import { dryRun, runSync as engineRunSync } from './lib/sync/engine';
+import { loadSyncHistory, recordSync } from './lib/sync/history';
+
+export type { Service } from './lib/config';
+export type { AppCredentials, ServiceCredentials } from './lib/storage';
+export type { SpotifyPlaylist, SpotifyTrack } from './lib/spotify/types';
+export type { TidalPlaylist, TidalTrack } from './lib/tidal/types';
+export type {
+  Destination,
+  SyncMapping,
+  MatchedTrack,
+  UnmatchedTrack,
+  SourceMatchResult,
+  SyncPlan,
+  SyncRunResult,
+} from './lib/sync/types';
+export type { SyncHistory, SyncHistoryEntry } from './lib/sync/history';
+
+import type { AppCredentials } from './lib/storage';
+import type { SyncMapping, SourceMatchResult, SyncPlan, SyncRunResult } from './lib/sync/types';
+
 export interface ServiceStatus {
   connected: boolean;
   name?: string;
 }
-
 export interface Status {
   spotify: ServiceStatus;
   tidal: ServiceStatus;
 }
 
-export interface ServiceCredentials {
-  clientId: string;
-  clientSecret: string;
-}
+// --- Status & credentials ---
+export const getStatus = (): Promise<Status> => session.status();
+export const getCredentials = async (): Promise<AppCredentials> => structuredClone(session.credentials);
+export const saveCredentials = async (creds: Partial<AppCredentials>): Promise<void> => session.updateCredentials(creds);
 
-export interface AppCredentials {
-  spotify: ServiceCredentials;
-  tidal: ServiceCredentials;
-}
-
-export type Service = 'spotify' | 'tidal';
-
-async function json<T>(res: Response): Promise<T> {
-  if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(body.error ?? `Request failed (${res.status})`);
+// --- OAuth (PKCE, in-browser) ---
+export async function getLoginUrl(service: Service): Promise<{ url: string }> {
+  if (service === 'spotify') {
+    const clientId = session.credentials.spotify.clientId;
+    if (!clientId) throw new Error('Enter your Spotify Client ID first');
+    return { url: await buildSpotifyAuthUrl(clientId) };
   }
-  return res.json() as Promise<T>;
+  if (!session.credentials.tidal.clientId) throw new Error('Enter your TIDAL Client ID first');
+  await session.ensureTidalInit();
+  return { url: await getTidalLoginUrl(redirectUri()) };
 }
 
-export const getStatus = () => fetch('/api/status').then(json<Status>);
-export const getCredentials = () => fetch('/api/credentials').then(json<AppCredentials>);
-
-export const saveCredentials = (creds: Partial<AppCredentials>) =>
-  fetch('/api/credentials', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(creds),
-  }).then(json<{ ok: boolean }>);
-
-export const getLoginUrl = (service: Service) =>
-  fetch(`/api/auth/${service}/login`).then(json<{ url: string }>);
-
-export interface SpotifyPlaylist {
-  id: string;
-  name: string;
-  description?: string;
-  trackCount: number;
-  ownerId: string;
+/** Handle an OAuth redirect back to the app. Returns which service connected, or null if no code. */
+export async function finishLoginRedirect(): Promise<Service | null> {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('error')) throw new Error(`Authorization failed (${params.get('error')})`);
+  const code = params.get('code');
+  if (!code) return null;
+  if (params.get('state') === 'spotify') {
+    await completeSpotifyLogin(session.credentials.spotify.clientId, code);
+    return 'spotify';
+  }
+  await session.ensureTidalInit();
+  await finalizeTidalLogin(window.location.search);
+  return 'tidal';
 }
 
-export interface SpotifyTrack {
-  id: string;
-  name: string;
-  artists: string[];
-  isrc?: string;
-  durationMs: number;
-  albumName?: string;
+export function disconnectSpotify(): void {
+  logoutSpotify();
+  session.spotify = undefined;
+  session.spotifyName = undefined;
 }
 
-export const getPlaylists = () =>
-  fetch('/api/playlists').then(json<{ playlists: SpotifyPlaylist[] }>);
+// --- Spotify library ---
+export const getPlaylists = async () => ({ playlists: await (await session.requireSpotify()).getMyPlaylists() });
+export const getPlaylistTracks = async (id: string) => ({ tracks: await (await session.requireSpotify()).getPlaylistTracks(id) });
+export const getLikedCount = async () => ({ total: await (await session.requireSpotify()).getLikedCount() });
+export const getLikedTracks = async () => ({ tracks: await (await session.requireSpotify()).getLikedTracks() });
 
-export const getPlaylistTracks = (id: string) =>
-  fetch(`/api/playlists/${id}/tracks`).then(json<{ tracks: SpotifyTrack[] }>);
+// --- TIDAL library ---
+export const getTidalPlaylists = async () => ({ playlists: await (await session.requireTidal()).getPlaylists() });
+export const getTidalPlaylistTracks = async (id: string) => ({ tracks: await (await session.requireTidal()).getPlaylistTracks(id) });
+export const getTidalFavorites = async () => ({ tracks: await (await session.requireTidal()).getFavoriteTracks() });
 
-export const getLikedCount = () => fetch('/api/spotify/liked').then(json<{ total: number }>);
-export const getLikedTracks = () =>
-  fetch('/api/spotify/liked/tracks').then(json<{ tracks: SpotifyTrack[] }>);
-
-export interface TidalPlaylist {
-  id: string;
-  name: string;
-  description?: string;
-  numberOfItems?: number;
+export async function getTidalTrack(id: string) {
+  const track = await (await session.requireTidal()).getTrack(id);
+  if (!track) throw new Error('Track not found on TIDAL');
+  return { track };
 }
-
-export interface TidalTrack {
-  id: string;
-  title: string;
-  artists: string[];
-  isrc?: string;
-  durationSeconds?: number;
-  version?: string;
-}
-
-export const getTidalPlaylists = () =>
-  fetch('/api/tidal/playlists').then(json<{ playlists: TidalPlaylist[] }>);
-export const getTidalPlaylistTracks = (id: string) =>
-  fetch(`/api/tidal/playlists/${id}/tracks`).then(json<{ tracks: TidalTrack[] }>);
-export const getTidalFavorites = () =>
-  fetch('/api/tidal/favorites/tracks').then(json<{ tracks: TidalTrack[] }>);
-
-export const getTidalTrack = (id: string) =>
-  fetch(`/api/tidal/track/${id}`).then(json<{ track: TidalTrack }>);
 
 /** Extract a TIDAL track id from a pasted link (or a bare numeric id). Returns null if not a track. */
 export function parseTidalTrackId(input: string): string | null {
@@ -102,94 +96,25 @@ export function parseTidalTrackId(input: string): string | null {
   return match ? match[1]! : null;
 }
 
-/** A chosen Spotify source → TIDAL destination mapping (consumed by the sync step). */
-export type Destination =
-  | { kind: 'new' }
-  | { kind: 'existing'; tidalId: string; tidalName: string }
-  | { kind: 'favorites' };
+// --- Match cache & history ---
+export const clearMatchCache = async (): Promise<{ cleared: number }> => {
+  const cleared = session.matchCache.size;
+  session.matchCache.clear();
+  return { cleared };
+};
 
-export interface SyncMapping {
-  sourceId: string;
-  sourceName: string;
-  sourceKind: 'playlist' | 'liked';
-  destination: Destination;
+export const getSyncHistory = async () => loadSyncHistory();
+
+// --- Dry run & sync (progress via callbacks; no streaming protocol needed in-browser) ---
+export interface DryRunHandlers {
+  onMeta?: (meta: { sources: Array<{ name: string; total: number }>; total: number }) => void;
+  onProgress?: (done: number, total: number) => void;
+  onSourceDone?: (result: SourceMatchResult) => void;
 }
 
-export interface MatchedTrack {
-  spotify: SpotifyTrack;
-  tidal: TidalTrack;
-  via: 'isrc' | 'name';
-}
-
-export interface UnmatchedTrack {
-  spotify: SpotifyTrack;
-  alternatives: TidalTrack[];
-}
-
-export interface SourceMatchResult {
-  mapping: SyncMapping;
-  total: number;
-  matched: MatchedTrack[];
-  unmatched: UnmatchedTrack[];
-}
-
-export const clearMatchCache = () =>
-  fetch('/api/sync/cache/clear', { method: 'POST' }).then(json<{ cleared: number }>);
-
-export interface SyncPlan {
-  mapping: SyncMapping;
-  tracks: Record<string, string>;
-  /** Favorites only: add one-by-one to preserve order (default true). False = faster, unordered. */
-  preserveOrder?: boolean;
-}
-
-export interface SyncRunResult {
-  sourceId: string;
-  sourceName: string;
-  destination: Destination;
-  playlistId?: string;
-  playlistName?: string;
-  requested: number;
-  added: number;
-  alreadyPresent: number;
-  error?: string;
-}
-
-export interface SyncHistoryEntry {
-  sourceId: string;
-  sourceName: string;
-  destinationKind: 'new' | 'existing' | 'favorites';
-  tidalPlaylistId?: string;
-  tidalPlaylistName?: string;
-  added: number;
-  total: number;
-  syncedAt: string;
-}
-
-export type SyncHistory = Record<string, SyncHistoryEntry>;
-
-export const getSyncHistory = () => fetch('/api/sync/history').then(json<SyncHistory>);
-
-/** Read a server NDJSON event stream, dispatching each event to `handle`. */
-async function readNdjsonStream(res: Response, handle: (event: Record<string, unknown>) => void): Promise<void> {
-  if (!res.ok || !res.body) {
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(body.error ?? `Request failed (${res.status})`);
-  }
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    let newline: number;
-    while ((newline = buffer.indexOf('\n')) >= 0) {
-      const line = buffer.slice(0, newline).trim();
-      buffer = buffer.slice(newline + 1);
-      if (line) handle(JSON.parse(line) as Record<string, unknown>);
-    }
-  }
+export async function dryRunSync(mappings: SyncMapping[], handlers: DryRunHandlers = {}): Promise<SourceMatchResult[]> {
+  const [spotify, tidal] = await Promise.all([session.requireSpotify(), session.requireTidal()]);
+  return dryRun(spotify, tidal, mappings, session.matchCache, handlers);
 }
 
 export interface RunSyncHandlers {
@@ -198,73 +123,26 @@ export interface RunSyncHandlers {
   onPlanDone?: (result: SyncRunResult) => void;
 }
 
-/** Write confirmed plans to TIDAL, consuming the progress stream; resolves with per-plan results. */
 export async function runSync(plans: SyncPlan[], handlers: RunSyncHandlers = {}): Promise<SyncRunResult[]> {
-  const res = await fetch('/api/sync/run', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ plans }),
+  const [spotify, tidal] = await Promise.all([session.requireSpotify(), session.requireTidal()]);
+  const syncedAt = new Date().toISOString();
+  return engineRunSync(spotify, tidal, plans, {
+    onMeta: handlers.onMeta,
+    onProgress: handlers.onProgress,
+    onPlanDone: (result) => {
+      if (!result.error) {
+        recordSync({
+          sourceId: result.sourceId,
+          sourceName: result.sourceName,
+          destinationKind: result.destination.kind,
+          tidalPlaylistId: result.playlistId,
+          tidalPlaylistName: result.playlistName,
+          added: result.added,
+          total: result.requested,
+          syncedAt,
+        });
+      }
+      handlers.onPlanDone?.(result);
+    },
   });
-  const results: SyncRunResult[] = [];
-  await readNdjsonStream(res, (event) => {
-    if (event.type === 'meta') handlers.onMeta?.(event as never);
-    else if (event.type === 'progress') handlers.onProgress?.(event.done as number, event.total as number);
-    else if (event.type === 'plan-done') {
-      results.push(event.result as SyncRunResult);
-      handlers.onPlanDone?.(event.result as SyncRunResult);
-    } else if (event.type === 'error') throw new Error(event.error as string);
-  });
-  return results;
-}
-
-export interface DryRunHandlers {
-  onMeta?: (meta: { sources: Array<{ name: string; total: number }>; total: number }) => void;
-  onProgress?: (done: number, total: number) => void;
-  onSourceDone?: (result: SourceMatchResult) => void;
-}
-
-/**
- * Run a dry run, consuming the server's newline-delimited JSON progress stream.
- * Resolves with the full set of per-source results once matching completes.
- */
-export async function dryRunSync(mappings: SyncMapping[], handlers: DryRunHandlers = {}): Promise<SourceMatchResult[]> {
-  const res = await fetch('/api/sync/dry-run', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ mappings }),
-  });
-  if (!res.ok || !res.body) {
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(body.error ?? `Dry run failed (${res.status})`);
-  }
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  const results: SourceMatchResult[] = [];
-  let buffer = '';
-
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    let newline: number;
-    while ((newline = buffer.indexOf('\n')) >= 0) {
-      const line = buffer.slice(0, newline).trim();
-      buffer = buffer.slice(newline + 1);
-      if (!line) continue;
-      const event = JSON.parse(line) as
-        | { type: 'meta'; sources: Array<{ name: string; total: number }>; total: number }
-        | { type: 'progress'; done: number; total: number }
-        | { type: 'source-done'; result: SourceMatchResult }
-        | { type: 'done' }
-        | { type: 'error'; error: string };
-      if (event.type === 'meta') handlers.onMeta?.({ sources: event.sources, total: event.total });
-      else if (event.type === 'progress') handlers.onProgress?.(event.done, event.total);
-      else if (event.type === 'source-done') {
-        results.push(event.result);
-        handlers.onSourceDone?.(event.result);
-      } else if (event.type === 'error') throw new Error(event.error);
-    }
-  }
-  return results;
 }

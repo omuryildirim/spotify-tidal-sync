@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { match, isrcMatch, nameMatch, artistMatch, durationMatch, simple, normalize } from '../src/sync/matcher.js';
-import type { SpotifyTrack } from '../src/spotify/types.js';
-import type { TidalTrack } from '../src/tidal/types.js';
+import { match, isrcMatch, nameMatch, artistMatch, durationMatch, simple, normalize } from './matcher';
+import type { SpotifyTrack } from '../spotify/types';
+import type { TidalTrack } from '../tidal/types';
 
 function sp(overrides: Partial<SpotifyTrack> = {}): SpotifyTrack {
   return { id: 's1', name: 'Song', artists: ['Artist'], durationMs: 180_000, isrc: 'AAA111', ...overrides };

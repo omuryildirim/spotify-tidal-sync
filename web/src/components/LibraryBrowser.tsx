@@ -173,7 +173,7 @@ export default function LibraryBrowser({ onSync }: { onSync: (mappings: SyncMapp
                     onChange={(e) => setDest((d) => ({ ...d, [p.id]: e.target.value }))}
                     className="max-w-[14rem] rounded border border-white/10 bg-black/40 px-2 py-1 text-xs text-zinc-200"
                   >
-                    <option value="new">＋ Create / match by name</option>
+                    <option value="new">＋ Create</option>
                     {tidal.map((t) => (
                       <option key={t.id} value={t.id}>
                         → {t.name}
