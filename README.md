@@ -42,14 +42,17 @@ This opens the app at <http://127.0.0.1:5173>. Paste each service's **Client ID*
 
 `pnpm build` produces a static site in `web/dist/` — host it on any static host. There's no backend to run, and nothing secret is baked into the build (users paste their own Client IDs at runtime). After deploying, register your site's origin `/` (e.g. `https://your-app.pages.dev/`) as a redirect URI on both apps. (`pnpm preview` serves the build locally.)
 
-### Cloudflare Pages
+### Cloudflare
 
-The repo is set up for Cloudflare Pages' Git integration — no secrets in GitHub, no deploy workflow to maintain. In the Cloudflare dashboard, create a Pages project connected to this repo with:
+Cloudflare creates Git-connected projects as a Worker serving static assets. A [`wrangler.toml`](wrangler.toml) is included that points at the build output and enables SPA routing — no GitHub secrets and no deploy workflow to maintain.
+
+In the dashboard, go to **Workers & Pages → Create application → Import a repository**, pick this repo, and set:
 
 - **Build command:** `pnpm build`
-- **Output directory:** `web/dist`
+- **Deploy command:** `npx wrangler deploy`
+- **Variable** (under Advanced): `NODE_VERSION` = `22`
 
-Cloudflare builds and deploys on every push. A SPA fallback ([`web/public/_redirects`](web/public/_redirects)) is included so client routes and OAuth redirects resolve to `index.html`. Once deployed, add `https://<your-project>.pages.dev/` as a redirect URI on both the Spotify and TIDAL apps.
+Cloudflare builds and deploys on every push to your production branch. Once deployed, add your site's URL — `https://<name>.<your-subdomain>.workers.dev/` or your custom domain — as a redirect URI on both the Spotify and TIDAL apps.
 
 ## Features
 

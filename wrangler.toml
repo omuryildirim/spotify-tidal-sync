@@ -1,0 +1,9 @@
+# Deploys the static build (web/dist) as a Cloudflare Worker serving assets.
+# There is no Worker script — this is an assets-only project.
+name = "spotify-tidal-sync"
+compatibility_date = "2025-01-01"
+
+[assets]
+directory = "./web/dist"
+# Serve index.html for unknown paths so client routes and the OAuth callback resolve.
+not_found_handling = "single-page-application"
