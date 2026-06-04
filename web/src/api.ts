@@ -22,6 +22,7 @@ export type {
 export type { SyncHistory, SyncHistoryEntry } from './lib/sync/history';
 
 import type { AppCredentials } from './lib/storage';
+import { clearAllData as clearAllStorage } from './lib/storage';
 import type { SyncMapping, SourceMatchResult, SyncPlan, SyncRunResult } from './lib/sync/types';
 
 export interface ServiceStatus {
@@ -104,6 +105,12 @@ export const clearMatchCache = async (): Promise<{ cleared: number }> => {
 };
 
 export const getSyncHistory = async () => loadSyncHistory();
+
+/** Wipe all locally stored data (credentials, tokens, match cache, history). */
+export const clearAllData = async (): Promise<{ cleared: number }> => {
+  session.matchCache.clear();
+  return { cleared: clearAllStorage() };
+};
 
 // --- Dry run & sync (progress via callbacks; no streaming protocol needed in-browser) ---
 export interface DryRunHandlers {
