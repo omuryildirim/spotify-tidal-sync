@@ -1,46 +1,32 @@
 {
   "name": "spotify-tidal-sync",
   "version": "0.1.0",
-  "description": "Import and sync your Spotify playlists into TIDAL, with a local web interface.",
+  "description": "Sync your Spotify playlists and Liked Songs into TIDAL — a browser-only web app.",
   "license": "SEE LICENSE IN LICENSE",
   "type": "module",
-  "bin": {
-    "spotify-tidal-sync": "./dist/server/index.js"
-  },
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "dev": "concurrently -k -n api,web -c blue,green \"pnpm dev:api\" \"pnpm dev:web\"",
-    "dev:api": "FRONTEND_ORIGIN=http://localhost:5173 tsx watch src/server/index.ts",
-    "dev:web": "vite",
-    "build": "tsc && vite build",
-    "start": "node dist/server/index.js",
-    "typecheck": "tsc --noEmit && tsc -p web/tsconfig.json --noEmit",
+    "dev": "vite",
+    "build": "tsc -p web/tsconfig.json --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p web/tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@hono/node-server": "^2.0.4",
-    "@spotify/web-api-ts-sdk": "^1.2.0",
     "@tidal-music/api": "^0.25.0",
     "@tidal-music/auth": "^1.6.1",
-    "hono": "^4.12.23",
-    "js-yaml": "^4.1.0",
-    "open": "^10.1.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.0",
-    "@types/js-yaml": "^4.0.9",
-    "@types/node": "^22.10.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
-    "concurrently": "^10.0.3",
     "tailwindcss": "^4.3.0",
-    "tsx": "^4.19.0",
     "typescript": "^5.7.0",
     "vite": "^8.0.16",
     "vitest": "^2.1.0"

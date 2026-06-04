@@ -1,7 +1,9 @@
-import type { SpotifyApi, SimplifiedPlaylist, Page } from '@spotify/web-api-ts-sdk';
-import type { SpotifyTrack, SpotifyPlaylist } from './types.js';
+import type { SpotifyTrack, SpotifyPlaylist } from './types';
 
 const PAGE_LIMIT = 50;
+
+/** Returns a currently-valid Spotify access token (refreshing under the hood as needed). */
+export type TokenProvider = () => Promise<string>;
 
 /** Raw Spotify track object (as returned under either `track` or `item`). */
 interface RawTrack {
@@ -26,27 +28,31 @@ function mapTrack(track: RawTrack | null | undefined): SpotifyTrack | null {
   };
 }
 
-/** Thin wrapper exposing only what the sync engine needs from Spotify. */
+/** Raw Spotify playlist object (fields we read from /me/playlists). */
+interface RawPlaylist {
+  id: string;
+  name: string;
+  description?: string | null;
+  owner?: { id?: string };
+  tracks?: { total?: number };
+  items?: { total?: number };
+}
+
+/** Thin wrapper exposing only what the sync engine needs from Spotify (fetch-only, browser-safe). */
 export class SpotifyClient {
   private myIdPromise?: Promise<string>;
 
-  constructor(private readonly api: SpotifyApi) {}
+  constructor(private readonly getToken: TokenProvider) {}
 
   async currentUserId(): Promise<string> {
-    this.myIdPromise ??= this.api.currentUser.profile().then((p) => p.id);
+    this.myIdPromise ??= this.raw<{ id: string }>('/me').then((p) => p.id);
     return this.myIdPromise;
   }
 
-  private async token(): Promise<string> {
-    const token = await this.api.getAccessToken();
-    if (!token?.access_token) throw new Error('No Spotify access token');
-    return token.access_token;
-  }
-
-  /** GET a Spotify Web API path directly (bypasses the SDK for fine control over fields). */
+  /** GET a Spotify Web API path with a fresh bearer token. */
   private async raw<T>(path: string): Promise<T> {
     const res = await fetch(`https://api.spotify.com/v1${path}`, {
-      headers: { Authorization: `Bearer ${await this.token()}` },
+      headers: { Authorization: `Bearer ${await this.getToken()}` },
     });
     if (!res.ok) throw new Error(`Spotify ${path} → ${res.status}: ${await res.text()}`);
     return res.json() as Promise<T>;
@@ -57,20 +63,19 @@ export class SpotifyClient {
     const myId = await this.currentUserId();
     const out: SpotifyPlaylist[] = [];
     for (let offset = 0; ; offset += PAGE_LIMIT) {
-      const page: Page<SimplifiedPlaylist> = await this.api.currentUser.playlists.playlists(PAGE_LIMIT, offset);
+      const page = await this.raw<{ next: string | null; items: RawPlaylist[] }>(
+        `/me/playlists?limit=${PAGE_LIMIT}&offset=${offset}`,
+      );
       for (const pl of page.items) {
         if (!pl || pl.owner?.id !== myId) continue;
         // Spotify exposes the count under `tracks` on older responses and `items` on newer ones.
-        const count =
-          (pl as { tracks?: { total?: number } }).tracks?.total ??
-          (pl as { items?: { total?: number } }).items?.total ??
-          0;
+        const count = pl.tracks?.total ?? pl.items?.total ?? 0;
         out.push({
           id: pl.id,
           name: pl.name,
           description: pl.description ?? undefined,
           trackCount: count,
-          ownerId: pl.owner.id,
+          ownerId: pl.owner?.id ?? myId,
         });
       }
       if (!page.next) break;

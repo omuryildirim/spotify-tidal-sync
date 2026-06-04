@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { matchTrack, runSync } from '../src/sync/engine.js';
-import type { TidalClient, TidalTrack } from '../src/tidal/types.js';
-import type { SpotifyClient } from '../src/spotify/client.js';
-import type { SpotifyTrack } from '../src/spotify/types.js';
-import type { SyncPlan } from '../src/sync/types.js';
+import { matchTrack, runSync } from './engine';
+import type { TidalClient, TidalTrack } from '../tidal/types';
+import type { SpotifyClient } from '../spotify/client';
+import type { SpotifyTrack } from '../spotify/types';
+import type { SyncPlan } from './types';
 
 function spotify(overrides: Partial<SpotifyTrack> = {}): SpotifyTrack {
   return { id: 's1', name: 'Uprising', artists: ['Muse'], durationMs: 304000, isrc: 'GBAHT0900320', ...overrides };
@@ -42,6 +42,7 @@ function fakeClient(searchResults: Record<string, TidalTrack[]>): TidalClient & 
       return { id: 'p', name: 'p' };
     },
     async addTracks() {},
+    async addFavoriteTracks() {},
     async clearPlaylist() {},
     async getFavoriteTracks() {
       return [];

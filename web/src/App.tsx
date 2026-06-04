@@ -8,6 +8,7 @@ import {
   getCredentials,
   saveCredentials,
   getLoginUrl,
+  finishLoginRedirect,
   dryRunSync,
   runSync,
   type Status,
@@ -20,14 +21,12 @@ import {
 } from './api';
 
 const EMPTY_CREDS: AppCredentials = {
-  spotify: { clientId: '', clientSecret: '' },
-  tidal: { clientId: '', clientSecret: '' },
+  spotify: { clientId: '' },
+  tidal: { clientId: '' },
 };
 
-const REDIRECTS: Record<Service, string> = {
-  spotify: 'http://127.0.0.1:8888/api/auth/spotify/callback',
-  tidal: 'http://127.0.0.1:8888/api/auth/tidal/callback',
-};
+// Both OAuth flows redirect back to the app's own origin (must be registered on each app).
+const REDIRECT_URI = `${window.location.origin}/`;
 
 export default function App() {
   const [creds, setCreds] = useState<AppCredentials>(EMPTY_CREDS);
@@ -40,14 +39,14 @@ export default function App() {
   const [summary, setSummary] = useState<SyncRunResult[] | null>(null);
 
   useEffect(() => {
-    // Surface any ?connected / ?error from an OAuth round-trip, then clean the URL.
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('error')) setError(`Authorization failed for ${params.get('error')}.`);
-    if (params.has('connected') || params.has('error')) {
-      window.history.replaceState({}, '', window.location.pathname);
-    }
     void getCredentials().then(setCreds).catch(() => {});
-    void getStatus().then(setStatus).catch(() => {});
+    // Finish any OAuth redirect (exchange the code for a token), then load status. Clean the URL.
+    finishLoginRedirect()
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+      .finally(() => {
+        if (window.location.search) window.history.replaceState({}, '', window.location.pathname);
+        void getStatus().then(setStatus).catch(() => {});
+      });
   }, []);
 
   const connect = async (service: Service) => {
@@ -148,11 +147,9 @@ export default function App() {
               connected={status?.spotify.connected ?? false}
               name={status?.spotify.name}
               clientId={creds.spotify.clientId}
-              clientSecret={creds.spotify.clientSecret}
-              redirectUri={REDIRECTS.spotify}
+              redirectUri={REDIRECT_URI}
               busy={busy === 'spotify'}
-              onClientId={(v) => setCreds((c) => ({ ...c, spotify: { ...c.spotify, clientId: v } }))}
-              onClientSecret={(v) => setCreds((c) => ({ ...c, spotify: { ...c.spotify, clientSecret: v } }))}
+              onClientId={(v) => setCreds((c) => ({ ...c, spotify: { clientId: v } }))}
               onConnect={() => void connect('spotify')}
             />
             <ServicePanel
@@ -162,11 +159,9 @@ export default function App() {
               connected={status?.tidal.connected ?? false}
               name={status?.tidal.name}
               clientId={creds.tidal.clientId}
-              clientSecret={creds.tidal.clientSecret}
-              redirectUri={REDIRECTS.tidal}
+              redirectUri={REDIRECT_URI}
               busy={busy === 'tidal'}
-              onClientId={(v) => setCreds((c) => ({ ...c, tidal: { ...c.tidal, clientId: v } }))}
-              onClientSecret={(v) => setCreds((c) => ({ ...c, tidal: { ...c.tidal, clientSecret: v } }))}
+              onClientId={(v) => setCreds((c) => ({ ...c, tidal: { clientId: v } }))}
               onConnect={() => void connect('tidal')}
             />
           </div>

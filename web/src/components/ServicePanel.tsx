@@ -5,11 +5,9 @@ interface Props {
   connected: boolean;
   name?: string;
   clientId: string;
-  clientSecret: string;
   redirectUri: string;
   busy: boolean;
   onClientId: (v: string) => void;
-  onClientSecret: (v: string) => void;
   onConnect: () => void;
 }
 
@@ -48,17 +46,6 @@ export default function ServicePanel(props: Props) {
               placeholder="from the developer dashboard"
               autoComplete="off"
               spellCheck={false}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-400">Client Secret</span>
-            <input
-              type="password"
-              className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-white/30"
-              value={props.clientSecret}
-              onChange={(e) => props.onClientSecret(e.target.value)}
-              placeholder="••••••••"
-              autoComplete="off"
             />
           </label>
           <p className="text-xs text-zinc-500">

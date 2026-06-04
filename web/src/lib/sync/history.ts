@@ -1,5 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs';
-import { stateFile, SYNC_HISTORY_FILE } from '../util/paths.js';
+import { getJSON, setJSON } from '../storage';
 
 /** A record of the most recent successful sync of one Spotify source. */
 export interface SyncHistoryEntry {
@@ -16,17 +15,15 @@ export interface SyncHistoryEntry {
 /** Keyed by Spotify source id (e.g. a playlist id, or 'liked'). */
 export type SyncHistory = Record<string, SyncHistoryEntry>;
 
+const KEY = 'syncHistory';
+
 export function loadSyncHistory(): SyncHistory {
-  try {
-    return JSON.parse(readFileSync(stateFile(SYNC_HISTORY_FILE), 'utf8')) as SyncHistory;
-  } catch {
-    return {};
-  }
+  return getJSON<SyncHistory>(KEY, {});
 }
 
 /** Persist the latest sync for a source (overwrites any previous entry for that source). */
 export function recordSync(entry: SyncHistoryEntry): void {
   const history = loadSyncHistory();
   history[entry.sourceId] = entry;
-  writeFileSync(stateFile(SYNC_HISTORY_FILE), JSON.stringify(history, null, 2));
+  setJSON(KEY, history);
 }

@@ -1,7 +1,7 @@
-import type { SpotifyClient } from '../spotify/client.js';
-import type { TidalClient, TidalTrack } from '../tidal/types.js';
-import type { SpotifyTrack } from '../spotify/types.js';
-import { bestMatch, isrcMatch, simple } from './matcher.js';
+import type { SpotifyClient } from '../spotify/client';
+import type { TidalClient, TidalTrack } from '../tidal/types';
+import type { SpotifyTrack } from '../spotify/types';
+import { bestMatch, isrcMatch, simple } from './matcher';
 import type {
   MatchedTrack,
   SourceMatchResult,
@@ -9,7 +9,7 @@ import type {
   SyncPlan,
   SyncRunResult,
   UnmatchedTrack,
-} from './types.js';
+} from './types';
 
 /** How many TIDAL candidates to keep for the user to pick from when nothing matched. */
 const MAX_ALTERNATIVES = 6;
