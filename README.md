@@ -1,6 +1,6 @@
 # spotify-tidal-sync
 
-Move your Spotify playlists and Liked Songs to TIDAL through a small local web app. It matches each track to TIDAL (ISRC first, with a smart fallback), lets you review and fix anything before writing, and keeps your playlist order intact.
+Move your Spotify playlists and Liked Songs to TIDAL through a **browser-only** web app — no server, no install. It matches each track to TIDAL (ISRC first, with a smart fallback), lets you review and fix anything before writing, and keeps your playlist order intact. Everything runs in your browser and talks straight to Spotify and TIDAL; your tokens never leave your machine.
 
 ## Screenshots
 
@@ -22,12 +22,12 @@ Then sync, keeping your exact Spotify order:
 
 ## Getting started
 
-**Requirements:** [Node.js](https://nodejs.org) ≥ 22, [pnpm](https://pnpm.io), and your own developer apps for [Spotify](https://developer.spotify.com/dashboard) and [TIDAL](https://developer.tidal.com).
+**Requirements:** [Node.js](https://nodejs.org) ≥ 22 and [pnpm](https://pnpm.io) (to run/build), plus your own developer apps for [Spotify](https://developer.spotify.com/dashboard) and [TIDAL](https://developer.tidal.com).
 
-When creating those apps, register these redirect URIs:
+The app uses the **Authorization Code + PKCE** flow, so register both as **public** clients — **no client secret is needed**. Set the redirect URI on each app to the URL where the app runs:
 
-- **Spotify** — `http://127.0.0.1:8888/api/auth/spotify/callback`
-- **TIDAL** — `http://127.0.0.1:8888/api/auth/tidal/callback`
+- Local dev: `http://127.0.0.1:5173/`
+- If you deploy it: your site's origin, e.g. `https://your-app.example/`
 
 Then run:
 
@@ -36,9 +36,20 @@ pnpm install
 pnpm dev
 ```
 
-This opens the app at <http://localhost:5173>. Paste each service's **Client ID** and **Client Secret** to connect, pick what to sync and where, review the matches, and confirm.
+This opens the app at <http://127.0.0.1:5173>. Paste each service's **Client ID** to connect, pick what to sync and where, review the matches, and confirm.
 
-To run the production build instead: `pnpm build && pnpm start` (serves everything on <http://127.0.0.1:8888>).
+## Deploying
+
+`pnpm build` produces a static site in `web/dist/` — host it on any static host. There's no backend to run, and nothing secret is baked into the build (users paste their own Client IDs at runtime). After deploying, register your site's origin `/` (e.g. `https://your-app.pages.dev/`) as a redirect URI on both apps. (`pnpm preview` serves the build locally.)
+
+### Cloudflare Pages
+
+The repo is set up for Cloudflare Pages' Git integration — no secrets in GitHub, no deploy workflow to maintain. In the Cloudflare dashboard, create a Pages project connected to this repo with:
+
+- **Build command:** `pnpm build`
+- **Output directory:** `web/dist`
+
+Cloudflare builds and deploys on every push. A SPA fallback ([`web/public/_redirects`](web/public/_redirects)) is included so client routes and OAuth redirects resolve to `index.html`. Once deployed, add `https://<your-project>.pages.dev/` as a redirect URI on both the Spotify and TIDAL apps.
 
 ## Features
 
@@ -50,20 +61,15 @@ To run the production build instead: `pnpm build && pnpm start` (serves everythi
 
 ## Where your data lives
 
-Everything stays on your machine, under `~/.spotify-tidal-sync/`:
-
-- `app-credentials.json`, `spotify-token.json`, `tidal-credentials.json` — your API keys and OAuth tokens (written with `0600` permissions)
-- `sync-history.json` — the last sync for each source
-
-Data is only ever sent to Spotify and TIDAL directly, and none of it is committed to the repo.
+Everything stays in your **browser's `localStorage`** — your client IDs, OAuth tokens, and sync history. There is no server and no database; the app only ever talks to Spotify and TIDAL directly. Clearing your browser data (or using the in-app controls) removes it.
 
 ## Scripts
 
 | Command | Description |
 | --- | --- |
 | `pnpm dev` | Run the app with hot reload |
-| `pnpm build` | Type-check and build for production |
-| `pnpm start` | Run the production build |
+| `pnpm build` | Type-check and build the static site |
+| `pnpm preview` | Serve the production build locally |
 | `pnpm test` | Run the unit tests |
 
 ## License
