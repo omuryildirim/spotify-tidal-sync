@@ -2,6 +2,8 @@
 
 Move your Spotify playlists and Liked Songs to TIDAL through a **browser-only** web app — no server, no install. It matches each track to TIDAL (ISRC first, with a smart fallback), lets you review and fix anything before writing, and keeps your playlist order intact. Everything runs in your browser and talks straight to Spotify and TIDAL; your tokens never leave your machine.
 
+> **Use it now: [sync.ignorethedark.com](https://sync.ignorethedark.com)** — a hosted build of this exact code, so you can sync without cloning or running anything. It's a static page: nothing is sent to or stored on a server; everything still happens in your browser.
+
 ## Screenshots
 
 Connect both accounts with your own API credentials:
@@ -37,22 +39,6 @@ pnpm dev
 ```
 
 This opens the app at <http://127.0.0.1:5173>. Paste each service's **Client ID** to connect, pick what to sync and where, review the matches, and confirm.
-
-## Deploying
-
-`pnpm build` produces a static site in `web/dist/` — host it on any static host. There's no backend to run, and nothing secret is baked into the build (users paste their own Client IDs at runtime). After deploying, register your site's origin `/` (e.g. `https://your-app.pages.dev/`) as a redirect URI on both apps. (`pnpm preview` serves the build locally.)
-
-### Cloudflare
-
-Cloudflare creates Git-connected projects as a Worker serving static assets. A [`wrangler.toml`](wrangler.toml) is included that points at the build output and enables SPA routing — no GitHub secrets and no deploy workflow to maintain.
-
-In the dashboard, go to **Workers & Pages → Create application → Import a repository**, pick this repo, and set:
-
-- **Build command:** `pnpm build`
-- **Deploy command:** `npx wrangler deploy`
-- **Variable** (under Advanced): `NODE_VERSION` = `22`
-
-Cloudflare builds and deploys on every push to your production branch. Once deployed, add your site's URL — `https://<name>.<your-subdomain>.workers.dev/` or your custom domain — as a redirect URI on both the Spotify and TIDAL apps.
 
 ## Features
 
